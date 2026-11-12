@@ -36,7 +36,7 @@ export default function BatchesPage() {
     batchService
       .list()
       .then((data) => {
-        if (!cancelled) setBatches(data);
+        if (!cancelled) setBatches(Array.isArray(data) ? data : []);
       })
       .catch((apiError) => {
         if (!cancelled) setLoadError(apiError.message || t.errBatchListFailed);

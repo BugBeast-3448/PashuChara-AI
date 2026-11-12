@@ -29,7 +29,8 @@ export default function DashboardPage() {
 
     farmService.listCattleGroups().then((groups) => {
       if (!cancelled) {
-        const total = groups.reduce((sum, g) => sum + Number(g.count), 0);
+        const safeGroups = Array.isArray(groups) ? groups : [];
+        const total = safeGroups.reduce((sum, g) => sum + Number(g.count || 0), 0);
         setStats((prev) => ({ ...prev, cattle: total }));
       }
     }).catch(() => {
@@ -37,13 +38,17 @@ export default function DashboardPage() {
     });
 
     batchService.list().then((batches) => {
-      if (!cancelled) setStats((prev) => ({ ...prev, batches: batches.length }));
+      if (!cancelled) {
+        setStats((prev) => ({ ...prev, batches: Array.isArray(batches) ? batches.length : 0 }));
+      }
     }).catch(() => {
       if (!cancelled) setStats((prev) => ({ ...prev, batches: 0 }));
     });
 
     inspectionService.list().then((inspections) => {
-      if (!cancelled) setStats((prev) => ({ ...prev, scans: inspections.length }));
+      if (!cancelled) {
+        setStats((prev) => ({ ...prev, scans: Array.isArray(inspections) ? inspections.length : 0 }));
+      }
     }).catch(() => {
       if (!cancelled) setStats((prev) => ({ ...prev, scans: 0 }));
     });

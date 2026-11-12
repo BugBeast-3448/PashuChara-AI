@@ -11,7 +11,8 @@ export default function NotificationModal({ isOpen, onClose }) {
     if (isOpen) refreshNotifications();
   }, [isOpen, refreshNotifications]);
 
-  const recent = notifications.slice(0, 5);
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const recent = safeNotifications.slice(0, 5);
 
   const handleClick = (notification) => {
     if (!notification.is_read) markNotificationRead(notification.id);

@@ -23,10 +23,12 @@ import SupportPage from '../pages/SupportPage'
 import QrReportScannerPage from '../pages/QrReportScannerPage'
 import CloudBatchReportPage from '../pages/CloudBatchReportPage'
 import RootLayout from '../layouts/RootLayout'
+import RouteErrorPage from '../pages/RouteErrorPage'
 
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: '/',

@@ -34,13 +34,20 @@ const GUEST_USER = {
  * phases fill these in from their own real endpoints.
  */
 function userFromSession(apiUser) {
+  if (!apiUser || typeof apiUser !== "object" || Array.isArray(apiUser)) {
+    return GUEST_USER;
+  }
+  const hasIdentity = Boolean(apiUser.id || apiUser.phone_number || apiUser.email);
+  if (!hasIdentity) {
+    return GUEST_USER;
+  }
   return {
     ...GUEST_USER,
     isLoggedIn: true,
     isCustomName: true,
-    name: apiUser.full_name,
+    name: apiUser.full_name || apiUser.name || "",
     role: "",
-    phone: apiUser.phone_number,
+    phone: apiUser.phone_number || "",
     email: apiUser.email || "",
     age: apiUser.age ?? "",
     gender: apiUser.gender || "",
@@ -225,8 +232,8 @@ export function DashboardProvider({ children }) {
         notificationService.list(),
         notificationService.unreadCount(),
       ]);
-      setNotifications(list);
-      setUnreadCount(unread.count ?? 0);
+      setNotifications(Array.isArray(list) ? list : []);
+      setUnreadCount(typeof unread?.count === "number" ? unread.count : 0);
     } catch {
       // Best-effort — the bell just shows stale/empty state until the next refresh.
     }
@@ -238,8 +245,8 @@ export function DashboardProvider({ children }) {
     Promise.all([notificationService.list(), notificationService.unreadCount()])
       .then(([list, unread]) => {
         if (cancelled) return;
-        setNotifications(list);
-        setUnreadCount(unread.count ?? 0);
+        setNotifications(Array.isArray(list) ? list : []);
+        setUnreadCount(typeof unread?.count === "number" ? unread.count : 0);
       })
       .catch(() => {
         // Best-effort — the bell just shows stale/empty state until the next refresh.
@@ -252,7 +259,7 @@ export function DashboardProvider({ children }) {
   const markAllRead = useCallback(async () => {
     try {
       await notificationService.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications((prev) => (Array.isArray(prev) ? prev.map((n) => ({ ...n, is_read: true })) : []));
       setUnreadCount(0);
       showToast(t.toastAllRead || "सभी सूचनाएं पढ़ी गईं ✓");
     } catch (error) {
@@ -264,7 +271,9 @@ export function DashboardProvider({ children }) {
     try {
       await notificationService.markRead(notificationId);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n)),
+        Array.isArray(prev)
+          ? prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+          : [],
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
@@ -402,10 +411,14 @@ export function DashboardProvider({ children }) {
 
   const honorific = lang === "en" ? "ji" : lang === "gu" ? "ભાઈ" : lang === "ta" ? "அவர்களே" : "जी";
 
-  const greetingName = !user?.isLoggedIn
-    ? (t.drawerGuestAccount || "अतिथि किसान")
-    : (isDefaultRamesh ? (t.farmerGreetingName || "रमेश जी") : `${user.name.split(" ")[0]} ${honorific}`);
+  const safeName = typeof user?.name === "string" ? user.name.trim() : "";
+  const firstName = safeName ? safeName.split(/\s+/)[0] : "किसान";
 
+  const greetingName = !user?.isLoggedIn
+  ? (t.drawerGuestAccount || "अतिथि किसान")
+  : (isDefaultRamesh
+      ? (t.farmerGreetingName || "रमेश जी")
+      : `${firstName} ${honorific}`);
   const displayLocation = farm?.location || detectedLocation || (t.defaultFarmLocation || "करनाल, हरियाणा");
 
   const value = {

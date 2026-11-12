@@ -38,7 +38,7 @@ export default function HistoryPage() {
     historyService
       .listSaved()
       .then((data) => {
-        if (!cancelled) setRecords(data);
+        if (!cancelled) setRecords(Array.isArray(data) ? data : []);
       })
       .catch((apiError) => {
         if (!cancelled) setLoadError(apiError.message || t.errHistoryLoadFailed);

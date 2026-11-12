@@ -37,7 +37,7 @@ export default function CattlePage() {
     farmService
       .listCattleGroups()
       .then((data) => {
-        if (!cancelled) setCattleList(data);
+        if (!cancelled) setCattleList(Array.isArray(data) ? data : []);
       })
       .catch((apiError) => {
         if (!cancelled) setLoadError(apiError.message || "पशु सूची लोड नहीं हो सकी।");

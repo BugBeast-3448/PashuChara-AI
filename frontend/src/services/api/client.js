@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL } from '../../config/env'
-import { toApiRequestError } from './error'
+import { API_ERROR_CATEGORY, ApiRequestError, toApiRequestError } from './error'
 
 const CSRF_COOKIE_NAME = 'csrftoken'
 const CSRF_HEADER_NAME = 'X-CSRFToken'
@@ -57,6 +57,39 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
+    const contentType = String(response.headers?.['content-type'] || '').toLowerCase()
+    const responseType = response.config?.responseType
+
+    // In Capacitor WebView (https://localhost), relative /api/* requests without
+    // a reachable backend fallback to serving index.html with HTTP 200. Reject
+    // HTML or unexpected string payloads here so callers never treat them as JSON.
+    if (responseType === 'blob') {
+      if (response.data instanceof Blob && response.data.type.toLowerCase().includes('text/html')) {
+        return Promise.reject(
+          new ApiRequestError({
+            message: 'Unable to reach the backend API. Check your connection or API URL configuration.',
+            status: response.status ?? null,
+            category: API_ERROR_CATEGORY.NETWORK,
+            code: 'ERR_HTML_RESPONSE',
+            data: null,
+          }),
+        )
+      }
+    } else if (response.status !== 204) {
+      const isNonEmptyString = typeof response.data === 'string' && response.data.trim().length > 0
+      if (contentType.includes('text/html') || isNonEmptyString) {
+        return Promise.reject(
+          new ApiRequestError({
+            message: 'Unable to reach the backend API. Check your connection or API URL configuration.',
+            status: response.status ?? null,
+            category: API_ERROR_CATEGORY.NETWORK,
+            code: 'ERR_INVALID_RESPONSE',
+            data: null,
+          }),
+        )
+      }
+    }
+
     const headerToken = response.headers?.['x-csrftoken']
     if (headerToken) {
       capturedCsrfToken = headerToken

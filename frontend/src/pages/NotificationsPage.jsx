@@ -9,6 +9,8 @@ export default function NotificationsPage() {
   const navigate = useNavigate();
   const { t, notifications, markAllRead, markNotificationRead, refreshNotifications } = useDashboard();
 
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+
   useEffect(() => {
     refreshNotifications();
   }, [refreshNotifications]);
@@ -38,13 +40,13 @@ export default function NotificationsPage() {
 
         {/* Alerts List */}
         <main className="p-4 space-y-3 flex-1 overflow-y-auto">
-          {notifications.length === 0 && (
+          {safeNotifications.length === 0 && (
             <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-10">
               {t.notifEmptyState || "कोई सूचना नहीं है।"}
             </div>
           )}
 
-          {notifications.map((notification) => {
+          {safeNotifications.map((notification) => {
             const { icon, colorClasses, iconClasses } = getNotificationDisplay(notification);
             return (
               <div
